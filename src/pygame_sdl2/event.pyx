@@ -25,6 +25,8 @@ import threading
 import pygame_sdl2
 import sys
 
+import traceback
+
 if sys.version_info[0] >= 3:
     unichr = chr
 

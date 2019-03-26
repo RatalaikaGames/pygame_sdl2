@@ -1,9 +1,13 @@
 #ifndef PYGAME_SDL2_H
 #define PYGAME_SDL2_H
 
-#include "pygame_sdl2/pygame_sdl2.rwobject_api.h"
-#include "pygame_sdl2/pygame_sdl2.surface_api.h"
-#include "pygame_sdl2/pygame_sdl2.display_api.h"
+//MBG MODIFIED 
+//#include "pygame_sdl2/pygame_sdl2.rwobject_api.h"
+//#include "pygame_sdl2/pygame_sdl2.surface_api.h"
+//#include "pygame_sdl2/pygame_sdl2.display_api.h"
+#include "../gen/pygame_sdl2.rwobject_api.h"
+#include "../gen/pygame_sdl2.surface_api.h"
+#include "../gen/pygame_sdl2.display_api.h"
 
 /**
  * This imports the pygame_sdl2 C api. It returns 0 if the import succeeds, or
