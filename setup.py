@@ -75,21 +75,7 @@ else:
         if sys.version_info[0] < 3:
             setuplib.include_dirs.append(os.path.join(windeps, "include27"))
 
-        if platform.architecture()[0] == "32bit":
-            libdir = os.path.join(windeps, "lib/x86")
-        else:
-            libdir = os.path.join(windeps, "lib/x64")
 
-        setuplib.library_dirs.append(libdir)
-
-        for i in os.listdir(libdir):
-            if i.lower().endswith(".dll"):
-                shutil.copy(
-                    os.path.join(libdir, i),
-                    os.path.join(os.path.dirname(__file__), "src", "pygame_sdl2", i),
-                    )
-
-                temporary_package_data.append(i)
 
         setuplib.package_data.extend(temporary_package_data)
 

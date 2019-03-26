@@ -153,7 +153,7 @@ def cmodule(name, source, libs=[], define_macros=[]):
 
 necessary_gen = [ ]
 
-def cython(name, source=[], libs=[], compile_if=True, define_macros=[]):
+def cython(name, source=[], libs=[], compile_if=False, define_macros=[]): #MBG - compile_if disabled
     """
     Compiles a cython module. This takes care of regenerating it as necessary
     when it, or any of the files it depends on, changes.
