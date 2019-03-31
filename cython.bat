@@ -4,11 +4,11 @@ pushd %~dp0
 
 set BASEDIR=%~dp0..\
 
-set PYDIR=%BASEDIR%python27\
-set path=%PYDIR%;%PATH%
+set PYDIR=%BASEDIR%python27-for-tools\
+set path=%PYDIR%;%PYDIR%Scripts;%PATH%
 
 rem sigh..... @#&*(@#ing python.
-mklink /D c:\sdk\python27 %PYDIR%
+mklink /D c:\python27 %PYDIR%
 
 python setup.py build_ext
 
