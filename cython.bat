@@ -6,6 +6,7 @@ set BASEDIR=%~dp0..\
 
 set PYDIR=%BASEDIR%python27-for-tools\
 set path=%PYDIR%;%PYDIR%Scripts;%PATH%
+set PYTHONPATH=%PYDIR%Lib\site-packages
 
 rem sigh..... @#&*(@#ing python.
 rmdir c:\python27
