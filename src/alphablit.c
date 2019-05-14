@@ -1,3 +1,5 @@
+//WARNING! GPL CODE!!!
+
 /*
   pygame - Python Game Library
   Copyright (C) 2000-2001  Pete Shinners
@@ -23,6 +25,8 @@
 */
 
 #include "surface.h"
+
+#include <assert.h>
 
 /* The structure passed to the low level blit functions */
 typedef struct
@@ -2435,6 +2439,10 @@ pygame_Blit (SDL_Surface * src, SDL_Rect * srcrect,
 {
     SDL_Rect        fulldst;
     int             srcx, srcy, w, h;
+
+		//GPL CODE! CANNOT BE USED WITHOUT INVESTIGATION AND REWRITING!
+		assert(0);
+		return -1;
 
     /* Make sure the surfaces aren't locked */
     if (!src || !dst)
