@@ -80,8 +80,8 @@ extern "C" int pygame_Blit(SDL_Surface * src, SDL_Rect * srcrect, SDL_Surface * 
 
 	uint8_t* srcp = (uint8_t*)src->pixels;
 	uint8_t* dstp = (uint8_t*)dst->pixels;
-	srcp += src->pitch * srcr.y + srcr.x;
-	dstp += dst->pitch * dstr.y + dstr.x;
+	srcp += src->pitch * srcr.y + srcr.x * src->format->BytesPerPixel;
+	dstp += dst->pitch * dstr.y + dstr.x * dst->format->BytesPerPixel;
 
 	if(src->format->BitsPerPixel != 32) error("Unexpected src bpp on pygs blit");
 	if(dst->format->BitsPerPixel != 32) error("Unexpected dst bpp on pygs blit");
@@ -90,7 +90,7 @@ extern "C" int pygame_Blit(SDL_Surface * src, SDL_Rect * srcrect, SDL_Surface * 
 
 	#define UNPACK \
 		uint8_t &src_r = srcp[0]; uint8_t &src_g = srcp[1]; uint8_t &src_b = srcp[2]; uint8_t &src_a = srcp[3]; \
-		uint8_t &dst_r = srcp[0]; uint8_t &dst_g = srcp[1]; uint8_t &dst_b = srcp[2]; uint8_t &dst_a = srcp[3];
+		uint8_t &dst_r = dstp[0]; uint8_t &dst_g = dstp[1]; uint8_t &dst_b = dstp[2]; uint8_t &dst_a = dstp[3];
 
 	switch(the_args)
 	{
@@ -99,7 +99,7 @@ extern "C" int pygame_Blit(SDL_Surface * src, SDL_Rect * srcrect, SDL_Surface * 
 			//(possibly a simple copy operation if we have no amask)
 			for(int y=0;y<todoh;y++)
 			{
-				for(int x=0;x<todoh;x++)
+				for(int x=0;x<todow;x++)
 				{
 					UNPACK;
 					//have to copy formula from GPL code to preserve semantics
