@@ -69,8 +69,8 @@ extern "C" int pygame_Blit(SDL_Surface * src, SDL_Rect * srcrect, SDL_Surface * 
 	clipRectangle(src->w, src->h, &srcr);
 	clipRectangle(dst->w, dst->h, &dstr);
 
-	int todow = std::min(src->w,dst->w);
-	int todoh = std::min(src->h,dst->h);
+	int todow = std::min(srcr.w,dstr.w);
+	int todoh = std::min(srcr.h,dstr.h);
 
 	if(todow == 0 || todoh == 0)
 		return 0;
