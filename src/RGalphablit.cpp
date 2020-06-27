@@ -51,13 +51,7 @@ extern "C" int pygame_Blit(SDL_Surface * src, SDL_Rect * srcrect, SDL_Surface * 
 	SDL_Rect srcr, dstr;
 
 	//get the basic work rectangles
-	if(dstrect) dstr = *dstrect;
-	else 
-	{
-		dstr.x = dstr.y = 0;
-		dstr.w = dst->w;
-		dstr.h = dst->h;
-	}
+	//1. src
 	if(srcrect) srcr = *srcrect;
 	else 
 	{
@@ -66,6 +60,36 @@ extern "C" int pygame_Blit(SDL_Surface * src, SDL_Rect * srcrect, SDL_Surface * 
 		srcr.h = src->h;
 	}
 
+	//2. dst
+	if(dstrect) dstr = *dstrect;
+	else 
+	{
+		dstr.x = dstr.y = 0;
+		dstr.w = dst->w;
+		dstr.h = dst->h;
+	}
+
+	//actually, the destination rect's dimensions are supposed to be ignored (a rect is used to pass in an offset only)
+	//to keep things simple, let's assume it's effectively infinite (it will be clipped to the clip rectangle momentarily)
+	//I chose these values so in case a width gets padded out during further processing, it won't be near to overflowing the positive integers
+	dstr.w = 0x40000000;
+	dstr.h = 0x40000000;
+
+	//destination x/y can be represented as an opposite shift to source x/y
+	//that's how I prefer to do it
+	srcr.x -= dstr.x;
+	srcr.y -= dstr.y;
+	dstr.x = 0;
+	dstr.y = 0;
+	
+	//clip the destination rect against the clip rect
+	//NOTE: this will be insufficient in case the clip rect x/y is non-zero, since this clip function doesn't take an x and y
+	//I will handle that only once I have a test case. 
+	assert(dst->clip_rect.x == 0);
+	assert(dst->clip_rect.y == 0);
+	clipRectangle(dst->clip_rect.w, dst->clip_rect.h, &dstr);
+
+	//clip the rects against the physical surface
 	clipRectangle(src->w, src->h, &srcr);
 	clipRectangle(dst->w, dst->h, &dstr);
 
