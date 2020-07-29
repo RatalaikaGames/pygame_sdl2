@@ -75,13 +75,6 @@ extern "C" int pygame_Blit(SDL_Surface * src, SDL_Rect * srcrect, SDL_Surface * 
 	dstr.w = 0x40000000;
 	dstr.h = 0x40000000;
 
-	//destination x/y can be represented as an opposite shift to source x/y
-	//that's how I prefer to do it
-	srcr.x -= dstr.x;
-	srcr.y -= dstr.y;
-	dstr.x = 0;
-	dstr.y = 0;
-	
 	//clip the destination rect against the clip rect
 	//NOTE: this will be insufficient in case the clip rect x/y is non-zero, since this clip function doesn't take an x and y
 	//I will handle that only once I have a test case. 
