@@ -2,7 +2,7 @@
 
 SDL2_rotozoom.c: rotozoomer, zoomer and shrinker for 32bit or 8bit surfaces
 
-Copyright (C) 2012  Andreas Schiffler
+Copyright (C) 2012-2014  Andreas Schiffler
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
@@ -914,7 +914,7 @@ SDL_Surface* rotateSurface90Degrees(SDL_Surface* src, int numClockwiseTurns)
 		{
 			for (row = 0; row < src->h; ++row) {
 				srcBuf = (Uint8*)(src->pixels) + (row * src->pitch);
-				dstBuf = (Uint8*)(dst->pixels) + (row * bpp) + (dst->h * dst->pitch);
+				dstBuf = (Uint8*)(dst->pixels) + (row * bpp) + ((dst->h - 1) * dst->pitch);
 				for (col = 0; col < src->w; ++col) {
 					memcpy (dstBuf, srcBuf, bpp);
 					srcBuf += bpp;
@@ -966,7 +966,7 @@ void _rotozoomSurfaceSizeTrig(int width, int height, double angle, double zoomx,
 	*sanglezoom = sin(radangle);
 	*canglezoom = cos(radangle);
 	*sanglezoom *= zoomx;
-	*canglezoom *= zoomx;
+	*canglezoom *= zoomy;
 	x = (double)(width / 2);
 	y = (double)(height / 2);
 	cx = *canglezoom * x;
