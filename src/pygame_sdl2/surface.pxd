@@ -19,6 +19,7 @@
 
 
 from sdl2 cimport SDL_Surface
+from sdl2 cimport SDL_Renderer
 
 cdef class Surface:
     # Allow weak references.
@@ -26,6 +27,9 @@ cdef class Surface:
 
     # The SDL surface that corresponds to this surface.
     cdef SDL_Surface* surface
+
+    # The SDL renderer that corresponds to this surface.
+    cdef SDL_Renderer* renderer
 
     # True if we own our surface. False if some other Surface owns our
     # surface.

@@ -28,47 +28,47 @@ from pygame_sdl2.rect import Rect
 
 def pixel(Surface surface, x, y, color):
     cdef Color c = Color(color)
-    pixelRGBA(surface.surface, x, y, c.r, c.g, c.b, c.a)
+    pixelRGBA(surface.renderer, x, y, c.r, c.g, c.b, c.a)
 
 def hline(Surface surface, x1, x2, y, color):
     cdef Color c = Color(color)
-    hlineRGBA(surface.surface, x1, x2, y, c.r, c.g, c.b, c.a)
+    hlineRGBA(surface.renderer, x1, x2, y, c.r, c.g, c.b, c.a)
 
 def vline(Surface surface, x, y1, y2, color):
     cdef Color c = Color(color)
-    vlineRGBA(surface.surface, x, y1, y2, c.r, c.g, c.b, c.a)
+    vlineRGBA(surface.renderer, x, y1, y2, c.r, c.g, c.b, c.a)
 
 def rectangle(Surface surface, rect, color):
     cdef Color c = Color(color)
     if not isinstance(rect, Rect):
         rect = Rect(rect)
-    rectangleRGBA(surface.surface, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, c.r, c.g, c.b, c.a)
+    rectangleRGBA(surface.renderer, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, c.r, c.g, c.b, c.a)
 
 def rounded_rectangle(Surface surface, rect, rad, color):
     cdef Color c = Color(color)
     if not isinstance(rect, Rect):
         rect = Rect(rect)
-    roundedRectangleRGBA(surface.surface, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, rad, c.r, c.g, c.b, c.a)
+    roundedRectangleRGBA(surface.renderer, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, rad, c.r, c.g, c.b, c.a)
 
 def box(Surface surface, rect, color):
     cdef Color c = Color(color)
     if not isinstance(rect, Rect):
         rect = Rect(rect)
-    boxRGBA(surface.surface, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, c.r, c.g, c.b, c.a)
+    boxRGBA(surface.renderer, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, c.r, c.g, c.b, c.a)
 
 def rounded_box(Surface surface, rect, rad, color):
     cdef Color c = Color(color)
     if not isinstance(rect, Rect):
         rect = Rect(rect)
-    roundedBoxRGBA(surface.surface, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, rad, c.r, c.g, c.b, c.a)
+    roundedBoxRGBA(surface.renderer, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, rad, c.r, c.g, c.b, c.a)
 
 def line(Surface surface, x1, y1, x2, y2, color):
     cdef Color c = Color(color)
-    lineRGBA(surface.surface, x1, y1, x2, y2, c.r, c.g, c.b, c.a)
+    lineRGBA(surface.renderer, x1, y1, x2, y2, c.r, c.g, c.b, c.a)
 
 def aaline(Surface surface, x1, y1, x2, y2, color):
     cdef Color c = Color(color)
-    aalineRGBA(surface.surface, x1, y1, x2, y2, c.r, c.g, c.b, c.a)
+    aalineRGBA(surface.renderer, x1, y1, x2, y2, c.r, c.g, c.b, c.a)
 
 def thick_line(Surface surface, x1, y1, x2, y2, width, color):
     cdef Color c = Color(color)
@@ -85,55 +85,55 @@ def thick_line(Surface surface, x1, y1, x2, y2, width, color):
     if x1int == x2int and y1int == y2int:
         return
 
-    thickLineRGBA(surface.surface, x1int, y1int, x2int, y2int, width, c.r, c.g, c.b, c.a)
+    thickLineRGBA(surface.renderer, x1int, y1int, x2int, y2int, width, c.r, c.g, c.b, c.a)
 
 def circle(Surface surface, x, y, r, color):
     cdef Color c = Color(color)
-    circleRGBA(surface.surface, x, y, r, c.r, c.g, c.b, c.a)
+    circleRGBA(surface.renderer, x, y, r, c.r, c.g, c.b, c.a)
 
 def arc(Surface surface, x, y, r, start, end, color):
     cdef Color c = Color(color)
-    arcRGBA(surface.surface, x, y, r, start, end, c.r, c.g, c.b, c.a)
+    arcRGBA(surface.renderer, x, y, r, start, end, c.r, c.g, c.b, c.a)
 
 def aacircle(Surface surface, x, y, r, color):
     cdef Color c = Color(color)
-    aacircleRGBA(surface.surface, x, y, r, c.r, c.g, c.b, c.a)
+    aacircleRGBA(surface.renderer, x, y, r, c.r, c.g, c.b, c.a)
 
 def filled_circle(Surface surface, x, y, r, color):
     cdef Color c = Color(color)
-    filledCircleRGBA(surface.surface, x, y, r, c.r, c.g, c.b, c.a)
+    filledCircleRGBA(surface.renderer, x, y, r, c.r, c.g, c.b, c.a)
 
 def ellipse(Surface surface, x, y, rx, ry, color):
     cdef Color c = Color(color)
-    ellipseRGBA(surface.surface, x, y, rx, ry, c.r, c.g, c.b, c.a)
+    ellipseRGBA(surface.renderer, x, y, rx, ry, c.r, c.g, c.b, c.a)
 
 def aaellipse(Surface surface, x, y, rx, ry, color):
     cdef Color c = Color(color)
-    aaellipseRGBA(surface.surface, x, y, rx, ry, c.r, c.g, c.b, c.a)
+    aaellipseRGBA(surface.renderer, x, y, rx, ry, c.r, c.g, c.b, c.a)
 
 def filled_ellipse(Surface surface, x, y, rx, ry, color):
     cdef Color c = Color(color)
-    filledEllipseRGBA(surface.surface, x, y, rx, ry, c.r, c.g, c.b, c.a)
+    filledEllipseRGBA(surface.renderer, x, y, rx, ry, c.r, c.g, c.b, c.a)
 
 def pie(Surface surface, x, y, r, start, end, color):
     cdef Color c = Color(color)
-    pieRGBA(surface.surface, x, y, r, start, end, c.r, c.g, c.b, c.a)
+    pieRGBA(surface.renderer, x, y, r, start, end, c.r, c.g, c.b, c.a)
 
 def filled_pie(Surface surface, x, y, r, start, end, color):
     cdef Color c = Color(color)
-    filledPieRGBA(surface.surface, x, y, r, start, end, c.r, c.g, c.b, c.a)
+    filledPieRGBA(surface.renderer, x, y, r, start, end, c.r, c.g, c.b, c.a)
 
 def trigon(Surface surface, x1, y1, x2, y2, x3, y3, color):
     cdef Color c = Color(color)
-    trigonRGBA(surface.surface, x1, y1, x2, y2, x3, y3, c.r, c.g, c.b, c.a)
+    trigonRGBA(surface.renderer, x1, y1, x2, y2, x3, y3, c.r, c.g, c.b, c.a)
 
 def aatrigon(Surface surface, x1, y1, x2, y2, x3, y3, color):
     cdef Color c = Color(color)
-    aatrigonRGBA(surface.surface, x1, y1, x2, y2, x3, y3, c.r, c.g, c.b, c.a)
+    aatrigonRGBA(surface.renderer, x1, y1, x2, y2, x3, y3, c.r, c.g, c.b, c.a)
 
 def filled_trigon(Surface surface, x1, y1, x2, y2, x3, y3, color):
     cdef Color c = Color(color)
-    filledTrigonRGBA(surface.surface, x1, y1, x2, y2, x3, y3, c.r, c.g, c.b, c.a)
+    filledTrigonRGBA(surface.renderer, x1, y1, x2, y2, x3, y3, c.r, c.g, c.b, c.a)
 
 def polygon(Surface surface, points, color):
     cdef Color c = Color(color)
@@ -144,7 +144,7 @@ def polygon(Surface surface, points, color):
     vy = <Sint16*>malloc(num_points * sizeof(Sint16))
     for n, pt in zip(range(num_points), points):
         vx[n], vy[n] = points[n]
-    polygonRGBA(surface.surface, vx, vy, num_points, c.r, c.g, c.b, c.a)
+    polygonRGBA(surface.renderer, vx, vy, num_points, c.r, c.g, c.b, c.a)
     free(vx)
     free(vy)
 
@@ -157,7 +157,7 @@ def aapolygon(Surface surface, points, color):
     vy = <Sint16*>malloc(num_points * sizeof(Sint16))
     for n, pt in zip(range(num_points), points):
         vx[n], vy[n] = points[n]
-    aapolygonRGBA(surface.surface, vx, vy, num_points, c.r, c.g, c.b, c.a)
+    aapolygonRGBA(surface.renderer, vx, vy, num_points, c.r, c.g, c.b, c.a)
     free(vx)
     free(vy)
 
@@ -170,7 +170,7 @@ def filled_polygon(Surface surface, points, color):
     vy = <Sint16*>malloc(num_points * sizeof(Sint16))
     for n, pt in zip(range(num_points), points):
         vx[n], vy[n] = points[n]
-    filledPolygonRGBA(surface.surface, vx, vy, num_points, c.r, c.g, c.b, c.a)
+    filledPolygonRGBA(surface.renderer, vx, vy, num_points, c.r, c.g, c.b, c.a)
     free(vx)
     free(vy)
 
@@ -182,7 +182,7 @@ def textured_polygon(Surface surface, points, Surface texture not None, tx, ty):
     vy = <Sint16*>malloc(num_points * sizeof(Sint16))
     for n, pt in zip(range(num_points), points):
         vx[n], vy[n] = points[n]
-    texturedPolygon(surface.surface, vx, vy, num_points, texture.surface, tx, ty)
+    texturedPolygon(surface.renderer, vx, vy, num_points, texture.surface, tx, ty)
     free(vx)
     free(vy)
 
@@ -195,6 +195,6 @@ def bezier(Surface surface, points, steps, color):
     vy = <Sint16*>malloc(num_points * sizeof(Sint16))
     for n, pt in zip(range(num_points), points):
         vx[n], vy[n] = points[n]
-    bezierRGBA(surface.surface, vx, vy, num_points, steps, c.r, c.g, c.b, c.a)
+    bezierRGBA(surface.renderer, vx, vy, num_points, steps, c.r, c.g, c.b, c.a)
     free(vx)
     free(vy)

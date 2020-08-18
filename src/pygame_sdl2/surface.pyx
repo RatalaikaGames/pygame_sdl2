@@ -54,6 +54,7 @@ cdef class Surface:
 
     def __cinit__(self):
         self.surface = NULL
+        self.renderer = NULL
         self.owns_surface = False
         self.window_surface = False
         self.has_alpha = False
@@ -65,11 +66,13 @@ cdef class Surface:
             if total_size:
                 total_size -= self.surface.pitch * self.surface.h
 
+            SDL_DestroyRenderer(self.renderer)
             SDL_FreeSurface(self.surface)
             return
         elif self.window_surface:
             return
         elif self.parent:
+            SDL_DestroyRenderer(self.renderer)
             SDL_FreeSurface(self.surface)
             return
 
@@ -166,7 +169,11 @@ cdef class Surface:
         self.take_surface(surface)
 
     cdef void take_surface(self, SDL_Surface *surface):
+        if self.renderer != NULL:
+            SDL_DestroyRenderer(self.renderer)
+
         self.surface = surface
+        self.renderer = SDL_CreateSoftwareRenderer(surface)
         self.owns_surface = True
 
         global total_size
@@ -633,6 +640,7 @@ cdef class Surface:
         cdef Surface rv = Surface(())
 
         rv.surface = new_surface
+        rv.renderer = SDL_CreateSoftwareRenderer(rv.surface)
         rv.parent = self
         rv.offset_x = sdl_rect.x
         rv.offset_y = sdl_rect.y
