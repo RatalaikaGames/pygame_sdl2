@@ -42,6 +42,43 @@ static void clipRectangle(int w, int h, SDL_Rect* r)
 	if(r->h < 0) r->h = 0;
 }
 
+template<bool SRCA, bool SRCB>
+static void pygame_Blit_blend_std(uint8_t* srcp, uint8_t* dstp, int todow, int todoh, int srcpitch, int dstpitch)
+{
+	#define UNPACK \
+		uint8_t &src_r = srcp[0]; uint8_t &src_g = srcp[1]; uint8_t &src_b = srcp[2]; uint8_t &src_a = srcp[3]; \
+		uint8_t &dst_r = dstp[0]; uint8_t &dst_g = dstp[1]; uint8_t &dst_b = dstp[2]; uint8_t &dst_a = dstp[3];
+
+	for(int y=0;y<todoh;y++)
+	{
+		if(!SRCA && !SRCB)
+		{
+			//fast path
+			memcpy(dstp,srcp,todow*4);
+			srcp += srcpitch;
+			dstp += dstpitch;
+		}
+		continue;
+		for(int x=0;x<todow;x++)
+		{
+			UNPACK;
+			if(!SRCA)
+				src_a = 0xFF;
+			if(!SRCB)
+				dst_a = 0xFF;
+			//have to copy formula from GPL code to preserve semantics
+			dst_r = (((src_r - dst_r) * src_a) >> 8) + dst_r;
+			dst_g = (((src_g - dst_g) * src_a) >> 8) + dst_g;
+			dst_b = (((src_b - dst_b) * src_a) >> 8) + dst_b;
+			dst_a = src_a + dst_a - ((src_a * dst_a) / 255);
+			srcp += 4;
+			dstp += 4;
+		}
+		srcp += srcpitch - todow*4;
+		dstp += dstpitch - todow*4;
+	}
+}
+
 //return -1 for errors
 //assume the "dst" has pixel alpha
 extern "C" int pygame_Blit(SDL_Surface * src, SDL_Rect * srcrect, SDL_Surface * dst, SDL_Rect * dstrect, int the_args)
@@ -102,35 +139,34 @@ extern "C" int pygame_Blit(SDL_Surface * src, SDL_Rect * srcrect, SDL_Surface * 
 
 	if(src->format->BitsPerPixel != 32) error("Unexpected src bpp on pygs blit");
 	if(dst->format->BitsPerPixel != 32) error("Unexpected dst bpp on pygs blit");
-	if(!src->format->Amask) error("Unexpected src AMask on pygs blit");
-	if(!dst->format->Amask) error("Unexpected dst AMask on pygs blit");
 
-	#define UNPACK \
-		uint8_t &src_r = srcp[0]; uint8_t &src_g = srcp[1]; uint8_t &src_b = srcp[2]; uint8_t &src_a = srcp[3]; \
-		uint8_t &dst_r = dstp[0]; uint8_t &dst_g = dstp[1]; uint8_t &dst_b = dstp[2]; uint8_t &dst_a = dstp[3];
+	if(src->format->Amask == 0xFF000000 || src->format->Amask == 0x00000000) {}
+	else error("Unexpected src AMask on pygs blit");
+
+	if(dst->format->Amask == 0xFF000000 || dst->format->Amask == 0x00000000) {}
+	else error("Unexpected dst AMask on pygs blit");
 
 	switch(the_args)
 	{
 		case 0:
 			//simple alpha blit
-			//(possibly a simple copy operation if we have no amask)
-			for(int y=0;y<todoh;y++)
+			//not 100% sure how to handle all the cases
+			if(src->format->Amask == 0xFF000000)
 			{
-				for(int x=0;x<todow;x++)
-				{
-					UNPACK;
-					//have to copy formula from GPL code to preserve semantics
-					dst_r = (((src_r - dst_r) * src_a) >> 8) + dst_r;
-					dst_g = (((src_g - dst_g) * src_a) >> 8) + dst_g;
-					dst_b = (((src_b - dst_b) * src_a) >> 8) + dst_b;
-					dst_a = src_a + dst_a - ((src_a * dst_a) / 255);
-					srcp += 4;
-					dstp += 4;
-				}
-				srcp += src->pitch - todow*4;
-				dstp += dst->pitch - todow*4;
+				if(dst->format->Amask == 0xFF000000)
+					pygame_Blit_blend_std<true,true>(srcp,dstp,todow,todoh,src->pitch,dst->pitch);
+				else
+					pygame_Blit_blend_std<true,false>(srcp,dstp,todow,todoh,src->pitch,dst->pitch);
+			}
+			else
+			{
+				if(dst->format->Amask == 0xFF000000)
+					pygame_Blit_blend_std<false,true>(srcp,dstp,todow,todoh,src->pitch,dst->pitch);
+				else
+					pygame_Blit_blend_std<false,false>(srcp,dstp,todow,todoh,src->pitch,dst->pitch);
 			}
 			break;
+			
 
 		default:
 			error("Unexpected blend arg on pygs blit");
