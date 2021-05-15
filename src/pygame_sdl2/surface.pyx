@@ -644,6 +644,7 @@ cdef class Surface:
         rv.parent = self
         rv.offset_x = sdl_rect.x
         rv.offset_y = sdl_rect.y
+        rv.surface.sdlParent = self.surface
 
         if self.has_alpha:
             rv.set_alpha(self.get_alpha())

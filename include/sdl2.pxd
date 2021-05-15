@@ -697,6 +697,9 @@ cdef extern from "SDL.h" nogil:
         SDL_Rect clip_rect
         SDL_BlitMap *map
         int refcount
+        void *onFree
+        void* onFreeArg
+        SDL_Surface* sdlParent
 
     ctypedef int (*SDL_blit)(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect)
 
