@@ -28,6 +28,8 @@ from pygame_sdl2.error import error
 from pygame_sdl2.locals import SRCALPHA
 import pygame_sdl2
 
+cdef extern void global_hack_clear_sdl_surface(int enable);
+
 import warnings
 
 cdef extern from "src/surface.h" nogil:
@@ -160,8 +162,12 @@ cdef class Surface:
 
         cdef SDL_Surface *surface
 
+        if flags == 1337:
+            global_hack_clear_sdl_surface(1)
         with nogil:
             surface = SDL_CreateRGBSurface(0, w, h, depth_int, Rmask, Gmask, Bmask, Amask)
+        if flags == 1337:
+            global_hack_clear_sdl_surface(0)
 
         if not surface:
             raise error()
