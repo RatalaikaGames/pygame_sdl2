@@ -58,7 +58,6 @@ static void pygame_Blit_blend_std(uint8_t* srcp, uint8_t* dstp, int todow, int t
 			srcp += srcpitch;
 			dstp += dstpitch;
 		}
-		continue;
 		for(int x=0;x<todow;x++)
 		{
 			UNPACK;
