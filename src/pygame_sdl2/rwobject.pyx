@@ -182,17 +182,22 @@ cdef SDL_RWops *to_rwops(filelike, mode="rb") except NULL:
     if not isinstance(mode, bytes_):
         mode = mode.encode("ascii")
 
-    if isinstance(filelike, file_type) and mode == b"rb":
-        filelike = filelike.name
+    ############################
+    # MBG HACK - always use SDL_RWFromFile (this was needed when I updated to renpy 7.4.0 but reportedly it may nto be later)
+    name = filelike.name
 
-    # Try to open as a file.
-    if isinstance(filelike, bytes_):
-        name = filelike.decode(fsencoding)
-    elif isinstance(filelike, unicode_):
-        name = filelike
-    else:
-        name = None
+    #if isinstance(filelike, file_type) and mode == b"rb":
+    #    filelike = filelike.name
 
+    ## Try to open as a file.
+    #if isinstance(filelike, bytes_):
+    #    name = filelike.decode(fsencoding)
+    #elif isinstance(filelike, unicode_):
+    #    name = filelike
+    #else:
+    #    name = None
+    ############################
+    
     if name:
 
         dname = name.encode("utf-8")
