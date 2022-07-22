@@ -37,12 +37,11 @@ ios = ("PYGAME_IOS" in os.environ)
 # A map from a PYGAME_SDL2 hint to what it was set to.
 _pygame_hints = { }
 
-def hint(hint, value):
+def hint(hint, value, priority=1):
 
     if str(hint).startswith("PYGAME_SDL2"):
         _pygame_hints[str(hint)] = str(value)
         return
-
 
     if not isinstance(hint, bytes):
         hint = hint.encode("utf-8")
@@ -50,7 +49,7 @@ def hint(hint, value):
     if not isinstance(value, bytes):
         value = value.encode("utf-8")
 
-    SDL_SetHint(hint, value)
+    SDL_SetHintWithPriority(hint, value, priority)
 
 def _get_hint(hint, default):
     hint = str(hint)
@@ -121,25 +120,10 @@ def get_init():
 # The window that is used by the various module globals.
 main_window = None
 
-# Have we shown the first window?
-_shown_first_window = False
-
-def _before_first_window():
-    global _shown_first_window
-
-    if _shown_first_window:
-        return
-
-    _shown_first_window = True
-
-    # If we're on android, we have to close the splash window before opening
-    # our window.
-    try:
-        import androidembed
-        androidembed.close_window()
-    except ImportError:
-        pass
-
+try:
+    import androidembed
+except ImportError:
+    androidembed = None
 
 
 cdef class Window:
@@ -147,8 +131,6 @@ cdef class Window:
 
         if not isinstance(title, bytes):
             title = title.encode("utf-8")
-
-        _before_first_window()
 
         self.create_flags = flags
 
@@ -159,10 +141,26 @@ cdef class Window:
         else:
             gl_flag = SDL_WINDOW_OPENGL
 
-        self.window = SDL_CreateWindow(
-            title,
-            pos[0], pos[1],
-            resolution[0], resolution[1], flags | gl_flag)
+        self.window = NULL
+
+        if androidembed is not None:
+            self.window = SDL_GL_GetCurrentWindow()
+
+            if self.window:
+
+                # Android bug - a RGB_565 format is likely to mean the window
+                # wasn't created properly, so re-make it.
+                if SDL_GetWindowPixelFormat(self.window) == SDL_PIXELFORMAT_RGB565:
+                    SDL_DestroyWindow(self.window)
+                    self.window = NULL
+                else:
+                    SDL_SetWindowTitle(self.window, title)
+
+        if not self.window:
+            self.window = SDL_CreateWindow(
+                title,
+                pos[0], pos[1],
+                resolution[0], resolution[1], flags | gl_flag)
 
         if not self.window:
             raise error()
@@ -179,13 +177,15 @@ cdef class Window:
                 if self.gl_context == NULL:
                     raise error()
 
+                SDL_GL_MakeCurrent(self.window, self.gl_context)
+
                 if not ios:
                     # Try setting the swap interval - first positive, then negated
                     # to deal with the case where the negative interval isn't
                     # supported. Then give up and carry on.
                     if SDL_GL_SetSwapInterval(default_swap_control):
-                        SDL_GL_SetSwapInterval(-default_swap_control)
-
+                        if default_swap_control < 0:
+                            SDL_GL_SetSwapInterval(-default_swap_control)
 
             self.create_surface()
 
@@ -281,6 +281,21 @@ cdef class Window:
 
         self.create_surface()
 
+    def recreate_gl_context(self):
+        """
+        Check to see if the GL context was lost, and re-create it if it was.
+        """
+
+        if <unsigned long> SDL_GL_GetCurrentContext():
+            return False
+
+        self.gl_context = SDL_GL_CreateContext(self.window)
+
+        if self.gl_context == NULL:
+            raise error()
+
+        return True
+
     def get_window_flags(self):
         rv = SDL_GetWindowFlags(self.window)
 
@@ -295,9 +310,19 @@ cdef class Window:
         SDL_UpperBlit(self.surface.surface, NULL, self.window_surface, NULL)
 
     def flip(self):
+        cdef const char *err
+
         if self.gl_context != NULL:
             with nogil:
+                SDL_ClearError();
+
                 SDL_GL_SwapWindow(self.window)
+
+                err = SDL_GetError()
+
+            if err[0]:
+                raise error(err)
+
         else:
 
             if self.surface.surface != self.window_surface:
@@ -416,6 +441,33 @@ cdef class Window:
         SDL_GL_GetDrawableSize(self.window, &w, &h)
         return w, h
 
+
+    def get_size(self):
+        cdef int w, h
+
+        SDL_GetWindowSize(self.window, &w, &h)
+        return w, h
+
+    def restore(self):
+        SDL_RestoreWindow(self.window)
+
+    def maximize(self):
+        SDL_MaximizeWindow(self.window)
+
+    def minimize(self):
+        SDL_MinimizeWindow(self.window)
+
+    def get_sdl_window_pointer(self):
+        """
+        Returns the pointer to the SDL_Window corresponding to this window.
+        """
+
+        import ctypes
+        return ctypes.c_void_p(<unsigned long> self.window)
+
+
+
+
 # The icon that's used for new windows.
 default_icon = None
 
@@ -443,6 +495,13 @@ def set_mode(resolution=(0, 0), flags=0, depth=0, pos=(SDL_WINDOWPOS_UNDEFINED, 
         main_window.set_icon(default_icon)
 
     return main_window.surface
+
+def destroy():
+    global main_window
+
+    if main_window is not None:
+        main_window.destroy()
+        main_window = None
 
 def get_surface():
     if main_window is None:
@@ -687,6 +746,11 @@ def get_drawable_size():
         return main_window.get_drawable_size()
     return None
 
+def get_size():
+    if main_window:
+        return main_window.get_size()
+    return None
+
 def get_num_video_displays():
     rv = SDL_GetNumVideoDisplays()
     if rv < 0:
@@ -700,8 +764,18 @@ def get_display_bounds(index):
 
     return (rect.x, rect.y, rect.w, rect.h)
 
+def set_screensaver(state):
+    """
+    Sets the screenslaver to `state`.
+    """
+
+    if state:
+        SDL_EnableScreenSaver()
+    else:
+        SDL_DisableScreenSaver()
+
 def get_platform():
-    return SDL_GetPlatform()
+    return SDL_GetPlatform().decode("utf-8")
 
 cdef api SDL_Window *PyWindow_AsWindow(window):
     """

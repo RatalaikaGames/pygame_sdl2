@@ -113,7 +113,7 @@ def get_string_for_axis(axis):
     cdef const char *rv = SDL_GameControllerGetStringForAxis(axis)
 
     if rv != NULL:
-        return rv
+        return rv.decode("utf-8")
     else:
         return None
 
@@ -126,7 +126,7 @@ def get_string_for_button(button):
     cdef const char *rv = SDL_GameControllerGetStringForButton(button)
 
     if rv != NULL:
-        return rv
+        return rv.decode("utf-8")
     else:
         return None
 
@@ -217,7 +217,7 @@ cdef class Controller:
         if rv == NULL:
             return None
 
-        return rv
+        return rv.decode("utf-8")
 
     def is_controller(self):
         """
@@ -238,5 +238,4 @@ cdef class Controller:
         guid = SDL_JoystickGetDeviceGUID(self.index)
         SDL_JoystickGetGUIDString(guid, s, 33)
 
-        return s
-
+        return s.decode("utf-8")

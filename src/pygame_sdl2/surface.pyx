@@ -175,6 +175,9 @@ cdef class Surface:
         self.take_surface(surface)
 
     cdef void take_surface(self, SDL_Surface *surface):
+        if not surface:
+            raise error("A null pointer was passed in.")
+
         if self.renderer != NULL:
             SDL_DestroyRenderer(self.renderer)
 
@@ -213,19 +216,25 @@ cdef class Surface:
                     source = source.subsurface(area)
                     area = None
 
-                SDL_SetSurfaceBlendMode(source.surface, SDL_BLENDMODE_NONE)
+                if SDL_SetSurfaceBlendMode(source.surface, SDL_BLENDMODE_NONE):
+                    raise error()
                 temp = Surface(source.get_size(), SRCALPHA)
 
                 with nogil:
-                    SDL_UpperBlit(source.surface, NULL, temp.surface, NULL)
+                    err = SDL_UpperBlit(source.surface, NULL, temp.surface, NULL)
+
+                if err:
+                    raise error()
 
                 source = temp
                 colorkey = False
 
         if colorkey:
-            SDL_SetSurfaceBlendMode(source.surface, SDL_BLENDMODE_NONE)
+            if SDL_SetSurfaceBlendMode(source.surface, SDL_BLENDMODE_NONE):
+                raise error()
         else:
-            SDL_SetSurfaceBlendMode(source.surface, SDL_BLENDMODE_BLEND)
+            if SDL_SetSurfaceBlendMode(source.surface, SDL_BLENDMODE_BLEND):
+                raise error()
 
         to_sdl_rect(dest, &dest_rect, "dest")
 
@@ -250,10 +259,12 @@ cdef class Surface:
         if not isinstance(surface, Surface):
             surface = pygame_sdl2.display.get_surface()
 
-        if surface is None:
-            raise error("No video mode has been set.")
+        cdef SDL_PixelFormat *sample_format
 
-        cdef SDL_PixelFormat *sample_format = (<Surface> surface).surface.format
+        if surface is None:
+            sample_format = SDL_AllocFormat(SDL_PIXELFORMAT_BGRX8888)
+        else:
+            sample_format = (<Surface> surface).surface.format
 
         cdef Uint32 amask
         cdef Uint32 rmask
@@ -270,6 +281,9 @@ cdef class Surface:
             with nogil:
                 new_surface = SDL_ConvertSurface(self.surface, sample_format, 0)
 
+            if not new_surface:
+                raise error()
+
         else:
 
             rmask = sample_format.Rmask
@@ -282,6 +296,9 @@ cdef class Surface:
             with nogil:
                 new_surface = SDL_ConvertSurfaceFormat(self.surface, pixel_format, 0)
 
+            if not new_surface:
+                raise error()
+
         cdef Surface rv = Surface(())
         rv.take_surface(new_surface)
 
@@ -291,10 +308,12 @@ cdef class Surface:
         if surface is None:
             surface = pygame_sdl2.display.get_surface()
 
-        if surface is None:
-            raise error("No video mode has been set.")
+        cdef SDL_PixelFormat *sample_format
 
-        cdef SDL_PixelFormat *sample_format = surface.surface.format
+        if surface is None:
+            sample_format = SDL_AllocFormat(SDL_PIXELFORMAT_BGRA8888)
+        else:
+            sample_format = (<Surface> surface).surface.format
 
         cdef Uint32 amask = 0xff000000
         cdef Uint32 rmask = 0x00ff0000
@@ -311,6 +330,9 @@ cdef class Surface:
             with nogil:
                 new_surface = SDL_ConvertSurface(self.surface, sample_format, 0)
 
+            if not new_surface:
+                raise error()
+
         else:
 
             if sample_format.BytesPerPixel == 4:
@@ -323,6 +345,9 @@ cdef class Surface:
 
             with nogil:
                 new_surface = SDL_ConvertSurfaceFormat(self.surface, pixel_format, 0)
+
+            if not new_surface:
+                raise error()
 
         cdef Surface rv = Surface(())
         rv.take_surface(new_surface)
@@ -474,7 +499,8 @@ cdef class Surface:
 
         root.locklist.append(lock)
 
-        SDL_LockSurface(root.surface)
+        if SDL_LockSurface(root.surface):
+            raise error()
 
     def unlock(self, lock=None):
         cdef Surface root = self
@@ -642,6 +668,9 @@ cdef class Surface:
             self.surface.format.Gmask,
             self.surface.format.Bmask,
             self.surface.format.Amask)
+
+        if not new_surface:
+            raise error()
 
         cdef Surface rv = Surface(())
 
