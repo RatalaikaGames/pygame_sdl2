@@ -25,7 +25,6 @@ from libc.stdlib cimport calloc, free
 from pygame_sdl2.compat import file_type, bytes_, unicode_
 
 import sys
-import io
 
 # The fsencoding.
 fsencoding = sys.getfilesystemencoding() or "utf-8"
@@ -183,19 +182,23 @@ cdef SDL_RWops *to_rwops(filelike, mode="rb") except NULL:
     if not isinstance(mode, bytes_):
         mode = mode.encode("ascii")
 
-    name = getattr(filelike, "name", None)
-    if name is None:
-        name = filelike
+    ############################
+    # MBG HACK - always use SDL_RWFromFile (this was needed when I updated to renpy 7.4.0 but reportedly it may nto be later)
+    name = filelike.name
 
-    # Try to open as a file.
-    if isinstance(name, bytes_):
-        name = name.decode(fsencoding)
-    elif isinstance(name, unicode_):
-        pass
-    else:
-        name = None
+    #if isinstance(filelike, file_type) and mode == b"rb":
+    #    filelike = filelike.name
 
-    if (mode == b"rb") and (name is not None):
+    ## Try to open as a file.
+    #if isinstance(filelike, bytes_):
+    #    name = filelike.decode(fsencoding)
+    #elif isinstance(filelike, unicode_):
+    #    name = filelike
+    #else:
+    #    name = None
+    ############################
+    
+    if name:
 
         dname = name.encode("utf-8")
         cname = dname
@@ -205,43 +208,55 @@ cdef SDL_RWops *to_rwops(filelike, mode="rb") except NULL:
             rv = SDL_RWFromFile(cname, cmode)
 
         if rv == NULL:
-            raise IOError("Could not open {!r}: {}".format(name, SDL_GetError()))
+            raise IOError("Could not open {!r}: {}".format(filelike, SDL_GetError()))
 
+        return rv
+
+    if mode == b"rb":
         try:
 
             # If we have these properties, we're either an APK asset or a Ren'Py-style
             # subfile, so use an optimized path.
+            name = filelike.name
             base = filelike.base
             length = filelike.length
 
-            rw = rv
+            if name is not None:
 
-            SDL_RWseek(rw, base, RW_SEEK_SET);
+                if not isinstance(name, unicode_):
+                    name = name.decode(fsencoding)
 
-            sf = <SubFile *> calloc(sizeof(SubFile), 1)
-            sf.rw = rw
-            sf.base = base
-            sf.length = length
-            sf.tell = 0;
+                dname = name.encode("utf-8")
+                cname = dname
 
-            rv = SDL_AllocRW()
-            rv.size = subfile_size
-            rv.seek = subfile_seek
-            rv.read = subfile_read
-            rv.write = NULL
-            rv.close = subfile_close
-            rv.type = 0
-            rv.hidden.unknown.data1 = <void *> sf
+                with nogil:
+                    rw = SDL_RWFromFile(cname, b"rb")
+
+                if not rw:
+                    raise IOError("Could not open {!r}.".format(name))
+
+                SDL_RWseek(rw, base, RW_SEEK_SET);
+
+                sf = <SubFile *> calloc(sizeof(SubFile), 1)
+                sf.rw = rw
+                sf.base = base
+                sf.length = length
+                sf.tell = 0;
+
+                rv = SDL_AllocRW()
+                rv.size = subfile_size
+                rv.seek = subfile_seek
+                rv.read = subfile_read
+                rv.write = NULL
+                rv.close = subfile_close
+                rv.type = 0
+                rv.hidden.unknown.data1 = <void *> sf
+
+                return rv
 
         except AttributeError:
             pass
 
-        try:
-            filelike.close()
-        except:
-            pass
-
-        return rv
 
     if not (hasattr(filelike, "read") or hasattr(filelike, "write")):
         raise IOError("{!r} is not a filename or file-like object.".format(filelike))
