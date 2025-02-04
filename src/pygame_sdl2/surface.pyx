@@ -48,6 +48,9 @@ cdef void move_pixels(Uint8 *src, Uint8 *dst, int h, int span, int srcpitch, int
         memmove(dst, src, span);
         src += srcpitch;
         dst += dstpitch;
+		
+def clear_sdl_surface(enable: int):
+    global_hack_clear_sdl_surface(enable)			
 
 # The total size of all allocated surfaces
 total_size = 0
