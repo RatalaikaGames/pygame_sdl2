@@ -89,8 +89,6 @@ def init():
 
     sdl_main_init()
 
-    hint("SDL_VIDEO_MAC_FULLSCREEN_SPACES", "0")
-
     if SDL_InitSubSystem(SDL_INIT_VIDEO):
         raise error()
 
@@ -111,6 +109,9 @@ def quit(): # @ReservedAssignment
         main_window.destroy()
         main_window = None
 
+
+    SDL_QuitSubSystem(SDL_INIT_VIDEO)
+
     init_done = False
 
 def get_init():
@@ -127,7 +128,8 @@ except ImportError:
 
 
 cdef class Window:
-    def __init__(self, title, resolution=(0, 0), flags=0, depth=0, pos=(SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED)):
+    def __init__(self, title, resolution=(0, 0), flags=0, depth=0, pos=(SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED), Surface shape=None):
+        cdef SDL_WindowShapeMode shape_mode
 
         if not isinstance(title, bytes):
             title = title.encode("utf-8")
@@ -157,10 +159,31 @@ cdef class Window:
                     SDL_SetWindowTitle(self.window, title)
 
         if not self.window:
-            self.window = SDL_CreateWindow(
-                title,
-                pos[0], pos[1],
-                resolution[0], resolution[1], flags | gl_flag)
+
+            flags |= SDL_WINDOW_HIDDEN
+
+            if shape is not None:
+
+                shape_mode.mode = ShapeModeDefault
+
+                self.window = SDL_CreateShapedWindow(
+                    title,
+                    pos[0], pos[1],
+                    resolution[0], resolution[1], flags | gl_flag)
+
+                SDL_SetWindowShape(self.window, shape.surface, &shape_mode)
+
+            else:
+
+                self.window = SDL_CreateWindow(
+                    title,
+                    pos[0], pos[1],
+                    resolution[0], resolution[1], flags | gl_flag)
+
+            if pos != (SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED):
+                SDL_SetWindowPosition(self.window, pos[0], pos[1])
+
+            SDL_ShowWindow(self.window)
 
         if not self.window:
             raise error()
@@ -246,12 +269,23 @@ cdef class Window:
 
         SDL_DestroyWindow(self.window)
 
-    def resize(self, size, opengl=False):
+    def resize(self, size, opengl=False, fullscreen=None, maximized=None):
         """
         Resizes the window to `size`, which must be a width, height tuple. If opengl
         is true, adds an OpenGL context, if it's missing. Otherwise, removes the
         opengl context if present.
         """
+
+        flags = SDL_GetWindowFlags(self.window)
+
+        if fullscreen is None:
+            fullscreen = flags & SDL_WINDOW_FULLSCREEN_DESKTOP
+
+        if maximized is None:
+            maximized = flags & SDL_WINDOW_MAXIMIZED
+
+        if fullscreen:
+            maximized = False
 
         # Prevents a loop between the surface and this object.
         self.surface.get_window_flags = None
@@ -263,14 +297,28 @@ cdef class Window:
         cdef int cur_width = 0
         cdef int cur_height = 0
 
-        width, height = size
+        if (not fullscreen) and (not maximized) and (flags & SDL_WINDOW_MAXIMIZED):
+            SDL_RestoreWindow(self.window)
 
-        SDL_GetWindowSize(self.window, &cur_width, &cur_height)
+        if fullscreen:
 
-        if (cur_width != width) or (cur_height != height):
-            SDL_SetWindowSize(self.window, width, height)
+            if SDL_SetWindowFullscreen(self.window, SDL_WINDOW_FULLSCREEN_DESKTOP):
+                fullscreen = False
 
-        cdef int w, h
+        if not fullscreen:
+            SDL_SetWindowFullscreen(self.window, 0)
+
+        if (not fullscreen) and (not maximized):
+
+            width, height = size
+
+            SDL_GetWindowSize(self.window, &cur_width, &cur_height)
+
+            if (cur_width != width) or (cur_height != height):
+                SDL_SetWindowSize(self.window, width, height)
+
+        if maximized:
+            SDL_MaximizeWindow(self.window)
 
         # Create a missing GL context.
         if opengl and not self.gl_context:
@@ -281,18 +329,21 @@ cdef class Window:
 
         self.create_surface()
 
-    def recreate_gl_context(self):
+    def recreate_gl_context(self, always=False):
         """
         Check to see if the GL context was lost, and re-create it if it was.
         """
 
-        if <unsigned long> SDL_GL_GetCurrentContext():
-            return False
+        if not always:
+            if <unsigned long> SDL_GL_GetCurrentContext():
+                return False
 
         self.gl_context = SDL_GL_CreateContext(self.window)
 
         if self.gl_context == NULL:
             raise error()
+
+        SDL_GL_MakeCurrent(self.window, self.gl_context)
 
         return True
 
@@ -465,6 +516,14 @@ cdef class Window:
         import ctypes
         return ctypes.c_void_p(<unsigned long> self.window)
 
+    def get_position(self):
+        cdef int x, y
+
+        SDL_GetWindowPosition(self.window, &x, &y)
+        return x, y
+
+    def set_position(self, pos):
+        SDL_SetWindowPosition(self.window, pos[0], pos[1])
 
 
 
@@ -750,6 +809,17 @@ def get_size():
     if main_window:
         return main_window.get_size()
     return None
+
+def get_position():
+    if main_window:
+        return main_window.get_position()
+    return None
+
+def set_position(pos):
+    if main_window:
+        return main_window.set_position(pos)
+    return False
+
 
 def get_num_video_displays():
     rv = SDL_GetNumVideoDisplays()

@@ -94,6 +94,9 @@ def get_axis_from_string(name):
     pygame.CONTROLLER_AXIS_INVALID if `name` is not known.
     """
 
+    if not isinstance(name, bytes):
+        name = name.encode("utf-8")
+
     return SDL_GameControllerGetAxisFromString(name)
 
 def get_button_from_string(name):
@@ -101,6 +104,9 @@ def get_button_from_string(name):
     Returns the button number of the controller button with `name`, or
     pygame.CONTROLLER_BUTTON_INVALID if `name` is not known.
     """
+
+    if not isinstance(name, bytes):
+        name = name.encode("utf-8")
 
     return SDL_GameControllerGetButtonFromString(name)
 
@@ -137,6 +143,7 @@ cdef class Controller:
 
     cdef SDL_GameController *controller
     cdef int index
+    cdef public int instance_id
 
     def __cinit__(self):
         self.controller = NULL
@@ -153,6 +160,8 @@ cdef class Controller:
         """
         Opens the game controller, causing it to begin sending events.
         """
+
+        self.instance_id = SDL_JoystickGetDeviceInstanceID(self.index)
 
         if self.controller == NULL:
             self.controller = SDL_GameControllerOpen(self.index)

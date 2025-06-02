@@ -36,23 +36,29 @@ include "event_names.pxi"
 ACTIVEEVENT = SDL_LASTEVENT - 1
 VIDEORESIZE = SDL_LASTEVENT - 2
 VIDEOEXPOSE = SDL_LASTEVENT - 3
+WINDOWMOVED = SDL_LASTEVENT - 4
+# (Do not add events here.)
 
 event_names[ACTIVEEVENT] = "ACTIVEEVENT"
 event_names[VIDEORESIZE] = "VIDEORESIZE"
 event_names[VIDEOEXPOSE] = "VIDEOEXPOSE"
+event_names[WINDOWMOVED] = "WINDOWMOVED"
 
 # This is used for events posted to the event queue. This won't be returned
 # to the user - it's just used internally, with the event object itself
 # giving the type.
-cdef int POSTEDEVENT
-POSTEDEVENT = SDL_LASTEVENT - 4
+cdef unsigned int POSTEDEVENT
+POSTEDEVENT = SDL_LASTEVENT - 5
 
 # The maximum number of a user-defined event.
-USEREVENT_MAX = SDL_LASTEVENT - 5
+USEREVENT_MAX = SDL_LASTEVENT - 6
 
 # If true, the mousewheel is mapped to buttons 4 and 5. Otherwise, a
 # MOUSEWHEEL event is created.
 cdef bint mousewheel_buttons = 1
+
+cdef unsigned int SDL_TOUCH_MOUSEID
+SDL_TOUCH_MOUSEID = <unsigned int> -1
 
 class EventType(object):
 
@@ -65,7 +71,7 @@ class EventType(object):
         self.__dict__.update(kwargs)
 
     def __repr__(self):
-        if SDL_USEREVENT <= self.type < VIDEOEXPOSE:
+        if SDL_USEREVENT <= self.type < WINDOWMOVED:
             ename = "UserEvent%d" % (self.type - SDL_USEREVENT)
         else:
             try:
@@ -73,9 +79,15 @@ class EventType(object):
             except KeyError:
                 ename = "UNKNOWN"
 
-        d = self.__dict__.copy()
-        del d['_type']
-        return '<Event(%d-%s %s)>' % (self.type, ename, d)
+        rest = [ ]
+
+        for k, v in sorted(self.__dict__.items()):
+            if k == "_type" or k == "timestamp":
+                continue
+
+            rest.append("%s=%r" % (k, v))
+
+        return '<Event(%d-%s %s)>' % (self.type, ename, ", ".join(rest))
 
     @property
     def dict(self):
@@ -123,13 +135,19 @@ cdef make_keyboard_event(SDL_KeyboardEvent *e):
             elif e.keysym.sym <= 0xFFFF:
                 dargs['unicode'] = get_textinput()
 
+    else:
+        if e.type == SDL_KEYDOWN and not(e.keysym.mod & KMOD_NUM):
+            if SDLK_KP_1 <= e.keysym.sym <= SDLK_KP_0:
+                get_textinput()
+                dargs['unicode'] = ''
+
     return EventType(e.type, dict=dargs, repeat=e.repeat)
 
 cdef make_mousemotion_event(SDL_MouseMotionEvent *e):
     buttons = (1 if e.state & SDL_BUTTON_LMASK else 0,
                1 if e.state & SDL_BUTTON_MMASK else 0,
                1 if e.state & SDL_BUTTON_RMASK else 0)
-    return EventType(e.type, pos=(e.x, e.y), rel=(e.xrel, e.yrel), which=e.which, buttons=buttons)
+    return EventType(e.type, pos=(e.x, e.y), rel=(e.xrel, e.yrel), which=e.which, buttons=buttons, touch=(SDL_TOUCH_MOUSEID == e.which))
 
 cdef make_mousebtn_event(SDL_MouseButtonEvent *e):
     btn = e.button
@@ -138,7 +156,7 @@ cdef make_mousebtn_event(SDL_MouseButtonEvent *e):
     if mousewheel_buttons and btn >= 4:
         btn += 2
 
-    return EventType(e.type, button=btn, pos=(e.x, e.y), which=e.which)
+    return EventType(e.type, button=btn, pos=(e.x, e.y), which=e.which, touch=(SDL_TOUCH_MOUSEID == e.which))
 
 cdef make_mousewheel_event(SDL_MouseWheelEvent *e):
 
@@ -146,7 +164,7 @@ cdef make_mousewheel_event(SDL_MouseWheelEvent *e):
 
     # SDL2-style, if the user has opted-in.
     if not mousewheel_buttons:
-        return EventType(e.type, which=e.which, x=e.x, y=e.y)
+        return EventType(e.type, which=e.which, x=e.x, y=e.y, touch=(SDL_TOUCH_MOUSEID == e.which))
 
     # Otherwise, follow the SDL1 approach.
 
@@ -167,23 +185,21 @@ cdef make_mousewheel_event(SDL_MouseWheelEvent *e):
     SDL_GetMouseState(&x, &y)
 
     # MOUSEBUTTONUP event should follow immediately after
-    event_queue.insert(0, EventType(SDL_MOUSEBUTTONUP, button=btn, pos=(x,y)))
-    return EventType(SDL_MOUSEBUTTONDOWN, button=btn, pos=(x,y))
+    event_queue.insert(0, EventType(SDL_MOUSEBUTTONUP, which=e.which, button=btn, pos=(x,y), touch=(SDL_TOUCH_MOUSEID == e.which)))
+    return EventType(SDL_MOUSEBUTTONDOWN, which=e.which, button=btn, pos=(x,y), touch=(SDL_TOUCH_MOUSEID == e.which))
 
-cdef make_mousewheel_event_sdl2(SDL_MouseWheelEvent *e):
-    return EventType(e.type, x=e.x, y=e.y)
 
 cdef make_joyaxis_event(SDL_JoyAxisEvent *e):
-    return EventType(e.type, joy=e.which, axis=e.axis, value=e.value/32768.0)
+    return EventType(e.type, joy=e.which, instance_id=e.which, axis=e.axis, value=e.value/32768.0)
 
 cdef make_joyball_event(SDL_JoyBallEvent *e):
-    return EventType(e.type, joy=e.which, ball=e.ball, rel=(e.xrel, e.yrel))
+    return EventType(e.type, joy=e.which, instance_id=e.which, ball=e.ball, rel=(e.xrel, e.yrel))
 
 cdef make_joyhat_event(SDL_JoyHatEvent *e):
-    return EventType(e.type, joy=e.which, hat=e.hat, value=e.value)
+    return EventType(e.type, joy=e.which, instance_id=e.which, hat=e.hat, value=e.value)
 
 cdef make_joybtn_event(SDL_JoyButtonEvent *e):
-    return EventType(e.type, joy=e.which, button=e.button)
+    return EventType(e.type, joy=e.which, instance_id=e.which, button=e.button)
 
 cdef make_textinput_event(SDL_TextInputEvent *e):
     try:
@@ -196,6 +212,15 @@ cdef make_textediting_event(SDL_TextEditingEvent *e):
         return EventType(e.type, text=e.text.decode("utf-8"), start=e.start, length=e.length)
     except UnicodeDecodeError:
         return EventType(e.type, text='', start=e.start, length=e.length)
+
+cdef make_drop_event(SDL_DropEvent *e):
+    if e.file:
+        file = e.file.decode("utf-8")
+        SDL_free(e.file)
+    else:
+        file = None
+
+    return EventType(e.type, file=file, window_id=e.windowID)
 
 cdef make_window_event(SDL_WindowEvent *e):
     # SDL_APPMOUSEFOCUS
@@ -221,6 +246,9 @@ cdef make_window_event(SDL_WindowEvent *e):
 
     elif e.event == SDL_WINDOWEVENT_EXPOSED:
         return EventType(VIDEOEXPOSE)
+
+    elif e.event == SDL_WINDOWEVENT_MOVED:
+        return EventType(WINDOWMOVED, pos=(e.data1, e.data2), x=e.data1, y=e.data2)
 
     return EventType(SDL_WINDOWEVENT, event=e.event, data1=e.data1, data2=e.data2)
 
@@ -259,9 +287,11 @@ cdef make_event(SDL_Event *e):
     elif e.type in (SDL_CONTROLLERDEVICEADDED, SDL_CONTROLLERDEVICEREMOVED, SDL_CONTROLLERDEVICEREMAPPED):
         return EventType(e.type, which=e.cdevice.which)
     elif e.type in (SDL_FINGERMOTION, SDL_FINGERDOWN, SDL_FINGERUP):
-        return EventType(e.type, touchId=e.tfinger.touchId, fingerId=e.tfinger.fingerId, x=e.tfinger.x, y=e.tfinger.y, dx=e.tfinger.dx, dy=e.tfinger.dy, pressure=e.tfinger.pressure)
+        return EventType(e.type, touchId=e.tfinger.touchId, fingerId=e.tfinger.fingerId, touch_id=e.tfinger.touchId, finger_id=e.tfinger.fingerId, x=e.tfinger.x, y=e.tfinger.y, dx=e.tfinger.dx, dy=e.tfinger.dy, pressure=e.tfinger.pressure)
     elif e.type == SDL_MULTIGESTURE:
-        return EventType(e.type, touchId=e.mgesture.touchId, dTheta=e.mgesture.dTheta, dDist=e.mgesture.dDist, x=e.mgesture.x, y=e.mgesture.y, numFingers=e.mgesture.numFingers)
+        return EventType(e.type, touchId=e.mgesture.touchId, dTheta=e.mgesture.dTheta, dDist=e.mgesture.dDist, x=e.mgesture.x, y=e.mgesture.y, numFingers=e.mgesture.numFingers, touch_id=e.mgesture.touchId, rotated=e.mgesture.dTheta, pinched=e.mgesture.dDist, num_fingers=e.mgesture.numFingers)
+    elif e.type in (SDL_DROPFILE, SDL_DROPTEXT, SDL_DROPBEGIN, SDL_DROPCOMPLETE):
+        return make_drop_event(<SDL_DropEvent*> e)
     elif e.type == POSTEDEVENT:
         o = <object> e.user.data1
         Py_DECREF(o)
@@ -333,7 +363,9 @@ cdef int poll_sdl() except 1:
 
     with lock:
         while SDL_PollEvent(&evt):
-            event_queue.append(make_event(&evt))
+            e = make_event(&evt)
+            e.timestamp = evt.common.timestamp
+            event_queue.append(e)
 
     return 0
 
@@ -450,6 +482,9 @@ def get_blocked(t):
 
 def set_grab(on):
     SDL_SetWindowGrab(main_window.window, on)
+
+    if SDL_ShowCursor(SDL_QUERY) == SDL_DISABLE:
+        SDL_SetRelativeMouseMode(on)
 
 def get_grab():
     return SDL_GetWindowGrab(main_window.window)
