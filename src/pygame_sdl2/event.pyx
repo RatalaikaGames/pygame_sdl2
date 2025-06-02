@@ -334,7 +334,7 @@ cdef object get_events(kinds):
     The lock must be held when calling this function.
     """
 
-    if isinstance(kinds, (int, long)):
+    if isinstance(kinds, (int)): #MBG - removed int, long (why?)
         kinds = [ kinds ]
 
     global event_queue
@@ -461,7 +461,7 @@ def set_blocked(t=None):
     if t == None:
         for et in event_names.keys():
             SDL_EventState(et, SDL_ENABLE)
-    elif isinstance(t, (int, long)):
+    elif isinstance(t, (int)): #MBG: removed int, long (why?)
         SDL_EventState(t, SDL_IGNORE)
     else:
         for et in t:
@@ -471,7 +471,7 @@ def set_allowed(t=None):
     if t == None:
         for et in event_names.keys():
             SDL_EventState(et, SDL_IGNORE)
-    elif isinstance(t, (int, long)):
+    elif isinstance(t, (int)): #MBG: removed int, long (why?)
         SDL_EventState(t, SDL_ENABLE)
     else:
         for et in t:
