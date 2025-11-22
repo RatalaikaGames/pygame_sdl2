@@ -335,7 +335,7 @@ cdef class Window:
         """
 
         if not always:
-            if <unsigned long> SDL_GL_GetCurrentContext():
+            if <intptr_t> SDL_GL_GetCurrentContext():
                 return False
 
         self.gl_context = SDL_GL_CreateContext(self.window)
