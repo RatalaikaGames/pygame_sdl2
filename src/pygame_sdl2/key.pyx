@@ -40,7 +40,7 @@ cdef class KeyboardState:
             free(self.data)
 
     def __init__(self):
-        cdef uint8_t *state = SDL_GetKeyboardState(&self.numkeys)
+        cdef const uint8_t *state = SDL_GetKeyboardState(&self.numkeys)
         if state == NULL:
             raise error()
 
