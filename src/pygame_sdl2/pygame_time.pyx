@@ -71,7 +71,7 @@ def set_timer(eventid, milliseconds):
         timer_id = 0
 
     if milliseconds > 0:
-        timer_id = SDL_AddTimer(milliseconds, <SDL_TimerCallback>timer_callback, <void*><int>eventid)
+        timer_id = SDL_AddTimer(milliseconds, <SDL_TimerCallback>timer_callback, <void*><intptr_t>eventid)
         if timer_id == 0:
             raise error()
 
