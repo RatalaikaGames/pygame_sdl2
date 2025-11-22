@@ -52,7 +52,7 @@ def delay(milliseconds):
 
 cdef Uint32 timer_callback(Uint32 interval, void *param) nogil:
     cdef SDL_Event e
-    e.type = <int>param
+    e.type = <int><intptr_t>param
     e.user.code = 0
     e.user.data1 = NULL
     e.user.data2 = NULL
